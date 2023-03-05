@@ -1,0 +1,51 @@
+
+
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: domicile
+      MYSQL_ROOT_PASSWORD: adibo
+    command: --init-file /docker-entrypoint-initdb.d/init.sql
+    volumes:
+      - ./mysql-initdb/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    ports:
+      - 3307:3306
+      - 33061:33060
+
+  nodejs:
+    container_name: nodejs
+    depends_on:
+      - mysql
+    build: 
+      context: ./silver_server
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: adibo
+      DB_NAME: domicile
+      DB_PORT: 3307
+    ports:
+      - 3000:3000
+    volumes:
+      - ./silver_server:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
+
+  angular:
+    build: ./silver_client
+    container_name: angular
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./silver_client/src:/app/src
+    depends_on:
+      - nodejs
+volumes:
+  mysql_data:
